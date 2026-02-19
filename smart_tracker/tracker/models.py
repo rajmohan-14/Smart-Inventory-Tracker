@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from django.utils import timezone
 class Product(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
@@ -10,6 +10,8 @@ class Product(models.Model):
     in_stock = models.BooleanField(default=True)
     last_checked = models.DateTimeField(auto_now=True)
     last_alerted_price = models.FloatField(null=True, blank=True)
+    next_check_time = models.DateTimeField(default=timezone.now)
+
 class PriceHistory(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     price = models.FloatField()

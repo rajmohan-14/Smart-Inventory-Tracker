@@ -119,3 +119,11 @@ STATIC_URL = 'static/'
 CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    'check-prices-every-minute': {
+        'task': 'tracker.tasks.check_all_products',
+        'schedule': 60.0,  # every 60 seconds (for testing)
+    },
+}
