@@ -4,7 +4,7 @@ from datetime import timedelta
 
 from .models import Product, PriceHistory
 from .scraper import scrape_price
-
+from django.core.mail import send_mail
 
 def calculate_next_interval(product, new_price):
     distance = new_price - product.target_price
@@ -41,7 +41,12 @@ def check_product(product_id):
 
     elif new_price < product.target_price:
         if product.last_alerted_price is None:
-            print("Send email alert 🚨")
+            send_mail(
+    subject="Price Drop Alert 🚨",
+    message=f"{product.name} is now {new_price}",
+    from_email=None,
+    recipient_list=[product.user.email],
+)
             product.last_alerted_price = new_price
 
     
