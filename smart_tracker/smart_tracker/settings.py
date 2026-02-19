@@ -133,3 +133,5 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'keshusingh2021@gmail.com'
 EMAIL_HOST_PASSWORD = 'Keshu@singh1411'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
