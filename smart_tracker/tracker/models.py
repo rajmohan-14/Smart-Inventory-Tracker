@@ -11,11 +11,19 @@ class Product(models.Model):
     last_checked = models.DateTimeField(auto_now=True)
     last_alerted_price = models.FloatField(null=True, blank=True)
     next_check_time = models.DateTimeField(default=timezone.now,db_index=True)
-
 class PriceHistory(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        db_index=True
+    )
     price = models.FloatField()
-    checked_at = models.DateTimeField(auto_now_add=True)
+    checked_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['product', 'checked_at']),
+        ]
 
     def __str__(self):
         return f"{self.product.name} - {self.price}"
