@@ -5,7 +5,8 @@ from django.core.mail import send_mail
 
 from .models import Product, PriceHistory
 from .scraper import scrape_price
-
+from django.utils import timezone
+from datetime import timedelta
 
 def calculate_next_interval(product, new_price):
     distance = new_price - product.target_price
@@ -30,16 +31,16 @@ def check_product(self, product_id):
             raise Exception("Scraping failed")
 
     except Exception as exc:
-        # Retry after 10 seconds
+        
         raise self.retry(exc=exc, countdown=10)
 
-    # Save price history
+
     PriceHistory.objects.create(
         product=product,
         price=new_price
     )
 
-    # SMART RESET LOGIC
+
     if new_price >= product.target_price:
         product.last_alerted_price = None
 
@@ -53,7 +54,7 @@ def check_product(self, product_id):
             )
             product.last_alerted_price = new_price
 
-    # Adaptive scheduling
+
     interval = calculate_next_interval(product, new_price)
     product.next_check_time = timezone.now() + interval
 
@@ -69,3 +70,12 @@ def check_all_products():
 
     for product in products:
         check_product.delay(product.id)
+@shared_task
+def cleanup_old_price_history():
+    cutoff_date = timezone.now() - timedelta(days=30)
+
+    deleted_count, _ = PriceHistory.objects.filter(
+        checked_at__lt=cutoff_date
+    ).delete()
+
+    print(f"Deleted {deleted_count} old price records.")
