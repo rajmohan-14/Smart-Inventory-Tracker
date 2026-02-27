@@ -10,7 +10,7 @@ class Product(models.Model):
     in_stock = models.BooleanField(default=True)
     last_checked = models.DateTimeField(auto_now=True)
     last_alerted_price = models.FloatField(null=True, blank=True)
-    next_check_time = models.DateTimeField(default=timezone.now)
+    next_check_time = models.DateTimeField(default=timezone.now,db_index=True)
 
 class PriceHistory(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)

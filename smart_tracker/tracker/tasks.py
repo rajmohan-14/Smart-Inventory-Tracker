@@ -1,10 +1,11 @@
 from celery import shared_task
 from django.utils import timezone
 from datetime import timedelta
+from django.core.mail import send_mail
 
 from .models import Product, PriceHistory
 from .scraper import scrape_price
-from django.core.mail import send_mail
+
 
 def calculate_next_interval(product, new_price):
     distance = new_price - product.target_price
@@ -19,15 +20,18 @@ def calculate_next_interval(product, new_price):
         return timedelta(minutes=10)
 
 
+@shared_task(bind=True, max_retries=3)
+def check_product(self, product_id):
+    try:
+        product = Product.objects.get(id=product_id)
+        new_price = scrape_price(product.url)
 
-@shared_task
-def check_product(product_id):
-    product = Product.objects.get(id=product_id)
+        if new_price is None:
+            raise Exception("Scraping failed")
 
-    new_price = scrape_price(product.url)
-
-    if new_price is None:
-        return
+    except Exception as exc:
+        # Retry after 10 seconds
+        raise self.retry(exc=exc, countdown=10)
 
     # Save price history
     PriceHistory.objects.create(
@@ -42,20 +46,19 @@ def check_product(product_id):
     elif new_price < product.target_price:
         if product.last_alerted_price is None:
             send_mail(
-    subject="Price Drop Alert 🚨",
-    message=f"{product.name} is now {new_price}",
-    from_email=None,
-    recipient_list=[product.user.email],
-)
+                subject="Price Drop Alert 🚨",
+                message=f"{product.name} is now ₹{new_price}",
+                from_email=None,
+                recipient_list=[product.user.email],
+            )
             product.last_alerted_price = new_price
 
-    
+    # Adaptive scheduling
     interval = calculate_next_interval(product, new_price)
     product.next_check_time = timezone.now() + interval
 
     product.current_price = new_price
     product.save()
-
 
 
 @shared_task
